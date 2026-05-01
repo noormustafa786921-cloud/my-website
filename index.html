@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Dashboard</title>
+<title>Noor Community</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -12,111 +12,205 @@ body {
   padding:15px;
 }
 
+.logo {
+  text-align:center;
+  font-size:28px;
+  color:#22c55e;
+  margin-bottom:20px;
+}
+
 .card {
   background:#1e293b;
-  padding:20px;
+  padding:15px;
   margin:10px 0;
   border-radius:10px;
 }
 
-h2 {
-  color:#22c55e;
-}
-
 input {
   padding:10px;
-  width:100%;
+  width:90%;
+  margin:5px 0;
   border-radius:5px;
   border:none;
-  margin-bottom:10px;
 }
 
 button {
   padding:10px;
-  margin-right:10px;
+  margin:5px;
   border:none;
   border-radius:5px;
   background:#22c55e;
   color:white;
-  cursor:pointer;
+}
+
+#authBox {
+  text-align:center;
+  margin-top:50px;
 }
 </style>
 </head>
 
 <body>
 
-<h2>Hello User 👋</h2>
+<h1 class="logo">Noor Community 💚</h1>
+
+<div id="authBox">
+  <input type="email" id="email" placeholder="Email"><br>
+  <input type="password" id="password" placeholder="Password"><br>
+  <button onclick="signup()">Sign Up</button>
+  <button onclick="login()">Login</button>
+  <button onclick="forgotPassword()">Forgot Password</button>
+  <p id="msg"></p>
+</div>
+
+<div id="dashboard" style="display:none;">
+
+<button onclick="logout()">Logout</button>
 
 <div class="card">
-<h3>Today Earning</h3>
-<p>₹ 14,863</p>
+  <h3>Today Earning</h3>
+  <p>₹ 14,863</p>
 </div>
 
 <div class="card">
-<h3>Last 7 Days</h3>
-<p>₹ 18,866</p>
+  <h3>Deposit</h3>
+  <img src="your-qr.png" width="120"><br>
+  <input type="number" id="depositAmt" placeholder="Amount">
+  <button onclick="deposit()">Deposit</button>
 </div>
 
 <div class="card">
-<h3>Total Earning</h3>
-<p>₹ 96,893</p>
+  <h3>Withdraw</h3>
+  <input type="number" id="withdrawAmt" placeholder="Amount">
+  <button onclick="withdraw()">Withdraw</button>
 </div>
 
-<h2>Login / Signup</h2>
+<div class="card">
+  <h3>Your Requests</h3>
+  <div id="history"></div>
+</div>
 
-<input type="email" id="email" placeholder="Email">
-<input type="password" id="password" placeholder="Password">
+<div class="card" id="adminPanel" style="display:none;">
+  <h3>Admin Panel</h3>
+  <button onclick="loadRequests()">Load Requests</button>
+  <div id="adminData"></div>
+</div>
 
-<button onclick="signup()">Sign Up</button>
-<button onclick="login()">Login</button>
-
-<p id="msg"></p>
+</div>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } 
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut, onAuthStateChanged } 
 from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
 
-// 🔥 YOUR FIREBASE CONFIG
+import { getFirestore, collection, addDoc, getDocs, query, where, updateDoc, doc } 
+from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+
+// 🔥 Firebase config (अपना डालना)
 const firebaseConfig = {
-  apiKey: "AIzaSyBj_6FQIPVyDWkHtvLaPGEgEHdTWnataMw",
-  authDomain: "my-website-9ef96.firebaseapp.com",
-  projectId: "my-website-9ef96",
-  storageBucket: "my-website-9ef96.appspot.com"
-  messagingSenderId: "142788297402",
-  appId: "1:142788297402:web:3e32b79c2ade7e73187883",
+  apiKey: "PASTE_HERE",
+  authDomain: "PASTE_HERE",
+  projectId: "PASTE_HERE",
+  storageBucket: "PASTE_HERE",
+  messagingSenderId: "PASTE_HERE",
+  appId: "PASTE_HERE"
 };
+
+const ADMIN_EMAIL = "your@email.com";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+const db = getFirestore(app);
 
-// ✅ SIGNUP
-window.signup = function () {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-
-  createUserWithEmailAndPassword(auth, email, password)
-    .then(() => {
-      document.getElementById("msg").innerText = "Signup successful ✅";
-    })
-    .catch((error) => {
-      document.getElementById("msg").innerText = error.message;
-    });
+// SIGNUP
+window.signup = () => {
+  createUserWithEmailAndPassword(auth, email.value, password.value)
+  .then(()=> msg.innerText="Signup success")
+  .catch(e=> msg.innerText=e.message);
 };
 
-// ✅ LOGIN
-window.login = function () {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
+// LOGIN
+window.login = () => {
+  signInWithEmailAndPassword(auth, email.value, password.value)
+  .then(()=> msg.innerText="Login success")
+  .catch(e=> msg.innerText=e.message);
+};
 
-  signInWithEmailAndPassword(auth, email, password)
-    .then(() => {
-      document.getElementById("msg").innerText = "Login successful ✅";
-    })
-    .catch((error) => {
-      document.getElementById("msg").innerText = error.message;
-    });
+// LOGOUT
+window.logout = () => signOut(auth);
+
+// FORGOT PASSWORD
+window.forgotPassword = () => {
+  sendPasswordResetEmail(auth, email.value)
+  .then(()=> msg.innerText="Reset link sent")
+  .catch(e=> msg.innerText=e.message);
+};
+
+// AUTH STATE
+onAuthStateChanged(auth, (user)=>{
+  if(user){
+    authBox.style.display="none";
+    dashboard.style.display="block";
+
+    if(user.email === ADMIN_EMAIL){
+      adminPanel.style.display="block";
+    }
+
+    loadHistory();
+  }else{
+    authBox.style.display="block";
+    dashboard.style.display="none";
+  }
+});
+
+// DEPOSIT
+window.deposit = async ()=>{
+  await addDoc(collection(db,"depositRequests"),{
+    email: auth.currentUser.email,
+    amount: depositAmt.value,
+    status:"pending"
+  });
+  alert("Deposit request sent");
+};
+
+// WITHDRAW
+window.withdraw = async ()=>{
+  await addDoc(collection(db,"withdrawRequests"),{
+    email: auth.currentUser.email,
+    amount: withdrawAmt.value,
+    status:"pending"
+  });
+  alert("Withdraw request sent");
+};
+
+// HISTORY
+async function loadHistory(){
+  let html="";
+  const snap = await getDocs(collection(db,"depositRequests"));
+  snap.forEach(d=>{
+    if(d.data().email===auth.currentUser.email){
+      html+=`<p>₹${d.data().amount} - ${d.data().status}</p>`;
+    }
+  });
+  history.innerHTML=html;
+}
+
+// ADMIN LOAD
+window.loadRequests = async ()=>{
+  let html="";
+  const snap = await getDocs(collection(db,"depositRequests"));
+  snap.forEach(d=>{
+    html+=`<p>${d.data().email} ₹${d.data().amount}
+    <button onclick="approve('${d.id}')">Approve</button></p>`;
+  });
+  adminData.innerHTML=html;
+};
+
+// APPROVE
+window.approve = async(id)=>{
+  await updateDoc(doc(db,"depositRequests",id),{status:"approved"});
+  alert("Approved");
 };
 
 </script>
